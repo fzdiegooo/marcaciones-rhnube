@@ -1,0 +1,11 @@
+config.env
+cookies.json
+marcaciones.db
+marcaciones.db-*
+node_modules/
+marcaciones.json
+marcaciones.csv
+__pycache__/
+*.pyc
+sync.log
+get-marcaciones-curl.txt

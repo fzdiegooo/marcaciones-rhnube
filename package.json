@@ -1,0 +1,15 @@
+{
+  "name": "get-marcaciones-rhnube",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Espejo de marcaciones RHNube para ERP (Express + SQLite)",
+  "scripts": {
+    "start": "node --no-warnings src/server.js",
+    "sync": "node --no-warnings src/cli.js sync",
+    "login": "node --no-warnings src/cli.js login"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "node-cron": "^4.6.0"
+  }
+}
