@@ -21,7 +21,7 @@ services:
     volumes:
       - marcaciones_data:/app/data
     ports:
-      - "127.0.0.1:3200:3000" # Protegido; el ERP lo alcanza por la red interna.
+      - "127.0.0.1:3103:3000" # Protegido; el ERP lo alcanza por la red interna.
     restart: unless-stopped
     init: true
     networks:
