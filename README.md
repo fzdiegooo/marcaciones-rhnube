@@ -59,6 +59,24 @@ npm start                           # levanta la API + el cron
 El primer login ocurre solo: el primer `POST /sync` detecta que no hay sesión y loguea
 (resolviendo el captcha) automáticamente. Si prefieres iniciarla a mano, llama `POST /login`.
 
+## Despliegue con Docker
+
+```bash
+cp config.env.example config.env   # completar credenciales
+docker compose up -d --build
+```
+
+- La API queda en `127.0.0.1:3200` (host) y en `http://marcaciones_rhnube:3000` para otros
+  contenedores del stack.
+- El espejo SQLite y las cookies persisten en el volumen `marcaciones_data` (`/app/data`).
+  **No borrar ese volumen**: hacerlo fuerza un login nuevo (gasta 2captcha) y pierde el histórico.
+- La red `crm_net` es externa (la crea el stack principal). Verifica su nombre real con
+  `docker network ls` y ajústalo en `docker-compose.yml` si no es `stratego_app_crm_net`.
+
+Las credenciales se pasan por `env_file: config.env`; `DB` y `COOKIE_FILE` se fijan por
+`environment` para apuntar al volumen. Las variables de entorno tienen prioridad sobre el
+archivo `config.env`.
+
 ## Configuración (`config.env`)
 
 | Variable         | Descripción                                                            | Default            |
@@ -69,6 +87,7 @@ El primer login ocurre solo: el primer `POST /sync` detecta que no hay sesión y
 | `DISPOSITIVOS`   | IDs de dispositivo biométrico separados por coma; vacío = todos        | `5488`             |
 | `LOOKBACK`       | Días hacia atrás que re-sincroniza cada corrida                        | `2`                |
 | `DB`             | Ruta del archivo SQLite                                                | `marcaciones.db`   |
+| `COOKIE_FILE`    | Ruta del archivo de cookies de sesión                                 | `cookies.json`     |
 | `PORT`           | Puerto de la API                                                       | `3000`             |
 | `CRON`           | Expresión cron del sync automático (zona `America/Lima`)               | `*/20 6-10 * * *`  |
 

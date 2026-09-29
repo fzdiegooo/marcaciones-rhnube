@@ -11,6 +11,7 @@ const client = new RHNube({
   password: cfg.PASSWORD,
   twocaptchaKey: cfg.TWOCAPTCHA_KEY,
   balanceMin: cfg.BALANCE_MIN,
+  cookieFile: cfg.COOKIE_FILE,
 });
 const store = new Store(cfg.DB);
 

@@ -1,0 +1,39 @@
+services:
+  # ==========================================
+  # MARCACIONES RHNUBE (espejo + API)
+  # ==========================================
+  marcaciones_rhnube:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marcaciones-rhnube:prod
+    container_name: marcaciones_rhnube
+    # Credenciales y ajustes (EMAIL, PASSWORD, TWOCAPTCHA_KEY, DISPOSITIVOS, etc.).
+    env_file:
+      - config.env
+    # Rutas fijas dentro del volumen persistente (pisan lo que venga en config.env).
+    environment:
+      - DB=/app/data/marcaciones.db
+      - COOKIE_FILE=/app/data/cookies.json
+      - PORT=3000
+    # Persiste el espejo SQLite y la sesión: sin esto, cada rebuild fuerza un
+    # login nuevo (gasta 2captcha) y borra el histórico.
+    volumes:
+      - marcaciones_data:/app/data
+    ports:
+      - "127.0.0.1:3200:3000" # Protegido; el ERP lo alcanza por la red interna.
+    restart: unless-stopped
+    init: true
+    networks:
+      - crm_net
+
+volumes:
+  marcaciones_data:
+
+# Red compartida con el resto del stack (creada por el compose principal).
+# Verifica el nombre real con `docker network ls` (suele llevar prefijo del
+# proyecto, p. ej. stratego_app_crm_net) y ajústalo aquí.
+networks:
+  crm_net:
+    external: true
+    name: stratego_app_crm_net

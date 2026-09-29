@@ -1,0 +1,10 @@
+node_modules
+.git
+legacy
+*.md
+config.env
+cookies.json
+marcaciones.db
+marcaciones.db-*
+get-marcaciones-curl.txt
+sync.log
