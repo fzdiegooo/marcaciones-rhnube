@@ -90,6 +90,7 @@ archivo `config.env`.
 | `COOKIE_FILE`    | Ruta del archivo de cookies de sesión                                 | `cookies.json`     |
 | `PORT`           | Puerto de la API                                                       | `3000`             |
 | `CRON`           | Expresión cron del sync automático (zona `America/Lima`)               | `*/20 6-10 * * *`  |
+| `KEEPALIVE_CRON` | Cron del ping que mantiene viva la sesión (evita el login diario)      | `0 */2 * * *`      |
 
 El cron por defecto (`*/20 6-10 * * *`) dispara cada 20 minutos entre las 6:00 y las 10:40.
 Para cortar antes de las 10:00 usar `*/20 6-9 * * *`.

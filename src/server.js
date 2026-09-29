@@ -34,6 +34,23 @@ async function runSync(origen) {
   }
 }
 
+// Ping para mantener viva la sesión (sliding). Si la encuentra muerta, re-loguea
+// para auto-sanar. Comparte el lock 'running' para no solaparse con un sync.
+async function keepalivePing() {
+  if (running) return;
+  running = true;
+  try {
+    if (await client.keepalive()) {
+      console.log('[keepalive] sesión viva, refrescada.');
+    } else {
+      console.warn('[keepalive] sesión muerta: re-logueando…');
+      await client.login();
+    }
+  } finally {
+    running = false;
+  }
+}
+
 // ---- Cron acotado: por defecto cada 20 min, 6am-10am ('*/20 6-10 * * *') ----
 if (!cron.validate(cfg.CRON)) {
   console.error(`CRON inválido: ${cfg.CRON}`);
@@ -43,6 +60,12 @@ cron.schedule(cfg.CRON, () => runSync('cron').catch((e) => console.error('[cron]
   timezone: 'America/Lima',
 });
 console.log(`Cron activo: "${cfg.CRON}" (America/Lima)`);
+
+// ---- Keepalive: cada 2 horas mantiene viva la sesión (evita login diario) ----
+cron.schedule(cfg.KEEPALIVE_CRON, () => keepalivePing().catch((e) => console.error('[keepalive]', e.message)), {
+  timezone: 'America/Lima',
+});
+console.log(`Keepalive activo: "${cfg.KEEPALIVE_CRON}" (America/Lima)`);
 
 // ---- API ----
 const app = express();

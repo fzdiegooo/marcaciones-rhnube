@@ -19,7 +19,7 @@ export function loadConfig(path = 'config.env') {
 
   // 2. Entorno pisa al archivo.
   const KEYS = ['EMAIL', 'PASSWORD', 'TWOCAPTCHA_KEY', 'DISPOSITIVOS', 'LOOKBACK',
-    'DB', 'COOKIE_FILE', 'PORT', 'CRON', 'BALANCE_MIN'];
+    'DB', 'COOKIE_FILE', 'PORT', 'CRON', 'KEEPALIVE_CRON', 'BALANCE_MIN'];
   for (const k of KEYS) if (process.env[k] != null && process.env[k] !== '') raw[k] = process.env[k];
 
   for (const k of ['EMAIL', 'PASSWORD', 'TWOCAPTCHA_KEY']) {
@@ -36,6 +36,7 @@ export function loadConfig(path = 'config.env') {
     COOKIE_FILE: raw.COOKIE_FILE || 'cookies.json',
     PORT: parseInt(raw.PORT || '3000', 10),
     CRON: raw.CRON || '*/20 6-10 * * *', // cada 20 min, 6am-10am
+    KEEPALIVE_CRON: raw.KEEPALIVE_CRON || '0 */2 * * *', // cada 2 horas
     BALANCE_MIN: parseFloat(raw.BALANCE_MIN || '0.5'), // umbral aviso saldo (USD)
   };
 }
