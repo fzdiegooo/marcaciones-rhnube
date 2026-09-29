@@ -66,13 +66,31 @@ export class RHNube {
   async _csrfHeader() {
     // token del <meta csrf-token> de una página autenticada, para X-CSRF-TOKEN.
     // '/' redirige al estar logueado; '/biometricos' devuelve 200 con el meta.
+    // Devuelve null si la sesión está muerta (redirige a login, sin meta), para
+    // que el llamador decida re-loguear en vez de reventar.
     if (this.csrfCache) return this.csrfCache;
     const res = await this._get('/biometricos');
     const html = await res.text();
     const m = html.match(/csrf-token"\s+content="([^"]+)"/);
-    if (!m) throw new RHNubeError('No se encontró meta csrf-token en la home');
+    if (!m) return null;
     this.csrfCache = m[1];
     return this.csrfCache;
+  }
+
+  // Garantiza sesión válida antes de consultar. Loguea si no hay cookie o si
+  // la sesión está muerta. Así /sync funciona desde un arranque en frío.
+  async _ensureSession(autoLogin) {
+    if (!this.cookies['rhnube_session']) {
+      if (!autoLogin) throw new SessionExpired('Sin sesión: ejecuta POST /login primero.');
+      await this.login();
+      return;
+    }
+    const csrf = await this._csrfHeader();
+    if (!csrf) {
+      if (!autoLogin) throw new SessionExpired('Sesión expirada: ejecuta POST /login.');
+      this.csrfCache = null;
+      await this.login();
+    }
   }
 
   // ---------- login con 2captcha ----------
@@ -151,8 +169,7 @@ export class RHNube {
   }
 
   // ---------- extracción de marcaciones ----------
-  async _postMarcaciones(payload) {
-    const csrf = await this._csrfHeader();
+  async _postMarcaciones(payload, csrf) {
     return fetch(`${BASE}/marcaciones-biometricos`, {
       method: 'POST',
       redirect: 'manual',
@@ -199,13 +216,17 @@ export class RHNube {
     let total = null;
     let relogged = false;
 
+    // Asegura sesión antes de empezar (cubre arranque en frío sin cookies).
+    await this._ensureSession(autoLogin);
+
     while (true) {
+      const csrf = await this._csrfHeader();
       const payload = this.buildPayload({ inicio, fin, start, pageSize, dispositivos });
-      const res = await this._postMarcaciones(payload);
+      const res = await this._postMarcaciones(payload, csrf);
       this._absorbSetCookie(res);
 
       const ct = res.headers.get('content-type') || '';
-      if ([302, 401, 419].includes(res.status) || ct.includes('text/html')) {
+      if ([302, 401, 419].includes(res.status) || ct.includes('text/html') || !csrf) {
         if (autoLogin && !relogged) {
           this.csrfCache = null;
           await this.login();
