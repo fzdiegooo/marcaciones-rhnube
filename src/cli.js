@@ -19,9 +19,12 @@ const client = new RHNube({
   email: cfg.EMAIL,
   password: cfg.PASSWORD,
   twocaptchaKey: cfg.TWOCAPTCHA_KEY,
+  balanceMin: cfg.BALANCE_MIN,
 });
 
-if (cmd === 'login') {
+if (cmd === 'balance') {
+  console.log(`Saldo 2captcha: $${(await client.balance()).toFixed(4)} USD`);
+} else if (cmd === 'login') {
   await client.login();
   console.log('Login OK, cookies guardadas.');
 } else if (cmd === 'sync') {
@@ -30,6 +33,6 @@ if (cmd === 'login') {
   console.log(`Sync ${r.inicio}..${r.fin}: ${r.traidas} traídas, ${r.validas} válidas (descartadas ${r.descartadas}).`);
   store.close();
 } else {
-  console.log('Uso: node src/cli.js sync|login|presentes <YYYY-MM-DD>');
+  console.log('Uso: node src/cli.js sync|login|balance|presentes <YYYY-MM-DD>');
   process.exit(1);
 }

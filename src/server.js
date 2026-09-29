@@ -10,6 +10,7 @@ const client = new RHNube({
   email: cfg.EMAIL,
   password: cfg.PASSWORD,
   twocaptchaKey: cfg.TWOCAPTCHA_KEY,
+  balanceMin: cfg.BALANCE_MIN,
 });
 const store = new Store(cfg.DB);
 
@@ -68,6 +69,15 @@ app.get('/estuvo/:dni/:fecha', (req, res) => {
     fecha: req.params.fecha,
     estuvo: store.estuvo(req.params.dni, req.params.fecha),
   });
+});
+
+// Saldo restante en 2captcha (USD).
+app.get('/balance', async (_req, res) => {
+  try {
+    res.json({ balance_usd: await client.balance() });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true, syncing: running }));

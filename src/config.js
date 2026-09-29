@@ -23,5 +23,6 @@ export function loadConfig(path = 'config.env') {
   cfg.DB = cfg.DB || 'marcaciones.db';
   cfg.PORT = parseInt(cfg.PORT || '3000', 10);
   cfg.CRON = cfg.CRON || '*/20 6-10 * * *'; // cada 20 min, 6am-10am
+  cfg.BALANCE_MIN = parseFloat(cfg.BALANCE_MIN || '0.5'); // umbral aviso saldo (USD)
   return cfg;
 }

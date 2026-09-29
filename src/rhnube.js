@@ -13,11 +13,12 @@ export class SessionExpired extends RHNubeError {}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export class RHNube {
-  constructor({ email, password, twocaptchaKey, cookieFile = 'cookies.json' }) {
+  constructor({ email, password, twocaptchaKey, cookieFile = 'cookies.json', balanceMin = 0.5 }) {
     this.email = email;
     this.password = password;
     this.twocaptchaKey = twocaptchaKey;
     this.cookieFile = cookieFile;
+    this.balanceMin = balanceMin; // umbral (USD) para avisar saldo bajo tras login
     this.cookies = {}; // { name: value }
     this.csrfCache = null;
     this._loadCookies();
@@ -102,6 +103,8 @@ export class RHNube {
   }
 
   async login() {
+    console.warn('[login] Sesión expirada: resolviendo reCAPTCHA con 2captcha (consume 1 crédito)…');
+    const t0 = Date.now();
     const home = await this._get('/');
     const html = await home.text();
     const m = html.match(/name="_token"\s+value="([^"]+)"/);
@@ -135,6 +138,16 @@ export class RHNube {
     if (!this.cookies['rhnube_session']) throw new RHNubeError('Login no devolvió cookie de sesión');
     this.csrfCache = null;
     this._saveCookies();
+    console.warn(`[login] OK: nueva sesión guardada (${((Date.now() - t0) / 1000).toFixed(1)}s).`);
+    // Aviso de saldo: solo tras gastar un crédito. No rompe el login si falla.
+    try {
+      const bal = await this.balance();
+      if (bal <= this.balanceMin)
+        console.warn(`[balance] SALDO BAJO: $${bal.toFixed(4)} USD (umbral $${this.balanceMin}). Recarga 2captcha.`);
+      else console.warn(`[balance] Saldo 2captcha: $${bal.toFixed(4)} USD.`);
+    } catch (e) {
+      console.warn(`[balance] No se pudo consultar saldo: ${e.message}`);
+    }
   }
 
   // ---------- extracción de marcaciones ----------
@@ -221,6 +234,15 @@ export class RHNube {
     return rows.filter(
       (r) => r.estado === 1 && r.respuesta === 'Marcación registrada' && r.dni && r.emple_id
     );
+  }
+
+  // Saldo de 2captcha (en USD). Útil para vigilar créditos.
+  async balance() {
+    const res = await fetch(
+      `https://2captcha.com/res.php?key=${this.twocaptchaKey}&action=getbalance&json=1`
+    ).then((r) => r.json());
+    if (res.status !== 1) throw new RHNubeError(`2captcha getbalance falló: ${JSON.stringify(res)}`);
+    return parseFloat(res.request);
   }
 
   async keepalive() {
