@@ -53,9 +53,11 @@ usando la fecha del escaneo real (`marcacion`), no la de registro (`fechaRegistr
 ```bash
 npm install
 cp config.env.example config.env   # completar con credenciales reales
-npm run login                       # primer login: resuelve el captcha y crea cookies.json
 npm start                           # levanta la API + el cron
 ```
+
+El primer login ocurre solo: el primer `POST /sync` detecta que no hay sesión y loguea
+(resolviendo el captcha) automáticamente. Si prefieres iniciarla a mano, llama `POST /login`.
 
 ## Configuración (`config.env`)
 
@@ -77,6 +79,7 @@ Para cortar antes de las 10:00 usar `*/20 6-9 * * *`.
 
 | Método y ruta            | Descripción                                                          |
 | ------------------------ | -------------------------------------------------------------------- |
+| `POST /login`            | Fuerza un login (setup inicial o re-login). Consume 1 crédito 2captcha. |
 | `POST /sync`             | Sincroniza en el acto, sin esperar al cron. Devuelve el resumen.     |
 | `GET /presentes/:fecha`  | Nombres de presentes ese día (`YYYY-MM-DD`), sin vacíos, filtrados por dispositivo (`?dispositivo=5488` o los de `DISPOSITIVOS`). |
 | `GET /estuvo/:dni/:fecha`| `{ estuvo: true|false }` — pensado para el módulo de etapas.         |
@@ -93,16 +96,6 @@ curl localhost:3000/presentes/2026-09-28
 curl localhost:3000/estuvo/43716319/2026-09-28
 ```
 
-## CLI
-
-Para operar sin el servidor (por ejemplo, desde un cron del sistema):
-
-```bash
-npm run login                       # login manual / regenerar cookies.json
-npm run sync                        # sincroniza la ventana móvil una vez
-node src/cli.js presentes 2026-09-28
-```
-
 ## Estructura
 
 ```
@@ -111,7 +104,6 @@ src/
   store.js    Espejo SQLite: upsert idempotente y consultas (presentes, estuvo)
   sync.js     Sincronización de la ventana móvil, compartida por el cron y el endpoint
   server.js   Express + cron acotado por horario
-  cli.js      Comandos de línea: login | sync | presentes
   config.js   Carga de config.env
 legacy/       Prototipo original en Python (superado por la versión Node)
 ```

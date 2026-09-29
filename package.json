@@ -4,9 +4,7 @@
   "type": "module",
   "description": "Espejo de marcaciones RHNube para ERP (Express + SQLite)",
   "scripts": {
-    "start": "node --no-warnings src/server.js",
-    "sync": "node --no-warnings src/cli.js sync",
-    "login": "node --no-warnings src/cli.js login"
+    "start": "node --no-warnings src/server.js"
   },
   "dependencies": {
     "express": "^5.2.1",

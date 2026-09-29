@@ -77,6 +77,17 @@ app.get('/estuvo/:dni/:fecha', (req, res) => {
   });
 });
 
+// Login explícito (setup inicial o forzar re-login). Consume 1 crédito 2captcha.
+// Normalmente no hace falta: el primer POST /sync ya loguea solo si la sesión murió.
+app.post('/login', async (_req, res) => {
+  try {
+    await client.login();
+    res.json({ status: 'ok' });
+  } catch (e) {
+    res.status(502).json({ status: 'error', error: e.message });
+  }
+});
+
 // Saldo restante en 2captcha (USD).
 app.get('/balance', async (_req, res) => {
   try {
