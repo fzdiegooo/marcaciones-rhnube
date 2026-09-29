@@ -8,10 +8,9 @@ const cfg = loadConfig();
 
 if (cmd === 'presentes') {
   const store = new Store(cfg.DB);
-  const ws = store.presentes(arg);
-  console.log(`${arg}: ${ws.length} presentes`);
-  for (const w of ws)
-    console.log(`  ${w.dni}  ${w.nombre}  |  ${w.area}  |  ${w.primera_marca.slice(11)} → ${w.ultima_marca.slice(11)}  (${w.n_marcas})`);
+  const nombres = store.presentes(arg, cfg.DISPOSITIVOS);
+  console.log(`${arg}: ${nombres.length} presentes (dispositivos ${cfg.DISPOSITIVOS.join(',') || 'todos'})`);
+  for (const n of nombres) console.log(`  ${n}`);
   process.exit(0);
 }
 

@@ -8,23 +8,26 @@ CREATE TABLE IF NOT EXISTS marcaciones (
   nombre TEXT,
   fecha TEXT NOT NULL,
   marcacion_ts TEXT NOT NULL,
-  area TEXT, cargo TEXT, local TEXT, dispositivo TEXT,
+  area TEXT, cargo TEXT, local TEXT,
+  dispositivo TEXT,          -- nombre del biométrico (texto)
+  id_dispositivo INTEGER,    -- id numérico del dispositivo (ej. 5488)
   estado INTEGER,
   sync_ts TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS ix_marc_fecha_dni ON marcaciones(fecha, dni);
 CREATE INDEX IF NOT EXISTS ix_marc_emple ON marcaciones(emple_id, fecha);
+CREATE INDEX IF NOT EXISTS ix_marc_fecha_disp ON marcaciones(fecha, id_dispositivo);
 `;
 
 const UPSERT = `
 INSERT INTO marcaciones
   (idmarcaciones_biometrico, dni, emple_id, nombre, fecha, marcacion_ts,
-   area, cargo, local, dispositivo, estado, sync_ts)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+   area, cargo, local, dispositivo, id_dispositivo, estado, sync_ts)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
 ON CONFLICT(idmarcaciones_biometrico) DO UPDATE SET
   estado=excluded.estado, nombre=excluded.nombre, area=excluded.area,
   cargo=excluded.cargo, local=excluded.local, dispositivo=excluded.dispositivo,
-  sync_ts=datetime('now');
+  id_dispositivo=excluded.id_dispositivo, sync_ts=datetime('now');
 `;
 
 function rowParams(r) {
@@ -40,6 +43,7 @@ function rowParams(r) {
     de.cargo?.cargo_descripcion ?? null,
     de.local?.local_descripcion ?? null,
     r.biometrico ?? null,
+    r.idDispositivos ?? null,
     r.estado ?? null,
   ];
 }
@@ -49,13 +53,6 @@ export class Store {
     this.db = new DatabaseSync(path);
     this.db.exec(SCHEMA);
     this._upsert = this.db.prepare(UPSERT);
-    this._presentes = this.db.prepare(`
-      SELECT dni, emple_id, MAX(nombre) AS nombre, MAX(area) AS area,
-             MAX(cargo) AS cargo, MAX(local) AS local,
-             MIN(marcacion_ts) AS primera_marca, MAX(marcacion_ts) AS ultima_marca,
-             COUNT(*) AS n_marcas
-      FROM marcaciones WHERE fecha = ?
-      GROUP BY dni, emple_id ORDER BY primera_marca`);
     this._estuvo = this.db.prepare(
       'SELECT 1 FROM marcaciones WHERE dni=? AND fecha=? LIMIT 1'
     );
@@ -73,8 +70,20 @@ export class Store {
     return rowsValidas.length;
   }
 
-  presentes(fecha) {
-    return this._presentes.all(fecha);
+  // Solo nombres de presentes ese día: sin vacíos y filtrados por dispositivo(s).
+  // dispositivos: array de ids numéricos (ej. [5488]). Vacío = todos.
+  presentes(fecha, dispositivos = []) {
+    const ids = dispositivos.map(Number).filter((n) => !Number.isNaN(n));
+    let sql = `
+      SELECT DISTINCT nombre FROM marcaciones
+      WHERE fecha = ? AND nombre IS NOT NULL AND TRIM(nombre) != ''`;
+    const params = [fecha];
+    if (ids.length) {
+      sql += ` AND id_dispositivo IN (${ids.map(() => '?').join(',')})`;
+      params.push(...ids);
+    }
+    sql += ' ORDER BY nombre';
+    return this.db.prepare(sql).all(...params).map((r) => r.nombre);
   }
 
   estuvo(dni, fecha) {

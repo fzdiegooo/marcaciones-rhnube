@@ -57,9 +57,15 @@ app.post('/sync', async (_req, res) => {
   }
 });
 
-// Presentes de un día (lee SQLite, no toca RHNube).
+// Nombres de presentes de un día (lee SQLite, no toca RHNube).
+// Filtra por dispositivo: ?dispositivo=5488 o, por defecto, los de config (DISPOSITIVOS).
 app.get('/presentes/:fecha', (req, res) => {
-  res.json({ fecha: req.params.fecha, presentes: store.presentes(req.params.fecha) });
+  const dispositivos = req.query.dispositivo ? [req.query.dispositivo] : cfg.DISPOSITIVOS;
+  res.json({
+    fecha: req.params.fecha,
+    dispositivos,
+    nombres: store.presentes(req.params.fecha, dispositivos),
+  });
 });
 
 // ¿Un trabajador marcó ese día? (para el módulo de etapas).
