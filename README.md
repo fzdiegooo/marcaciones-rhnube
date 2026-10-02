@@ -103,6 +103,7 @@ Para cortar antes de las 10:00 usar `*/20 6-9 * * *`.
 | `POST /sync`             | Sincroniza en el acto, sin esperar al cron. Devuelve el resumen.     |
 | `GET /presentes/:fecha`  | Nombres de presentes ese día (`YYYY-MM-DD`), sin vacíos, filtrados por dispositivo (`?dispositivo=5488` o los de `DISPOSITIVOS`). |
 | `GET /estuvo/:dni/:fecha`| `{ estuvo: true|false }` — pensado para el módulo de etapas.         |
+| `GET /jornadas?desde=&hasta=` | Primera y última marcación de cada persona por día (`{ fecha, nombre, primera, ultima, marcaciones }`), máximo 62 días. Para contar horas trabajadas. |
 | `GET /health`            | Estado del servicio e indicador de sync en curso.                    |
 
 `POST /sync` tiene un lock: si ya hay una sincronización corriendo, responde `202` con

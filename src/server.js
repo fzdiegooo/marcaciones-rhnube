@@ -92,6 +92,21 @@ app.get('/presentes/:fecha', (req, res) => {
   });
 });
 
+// Primera y última marcación de cada persona por día, para contar horas
+// trabajadas. ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD (máximo 62 días).
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+app.get('/jornadas', (req, res) => {
+  const { desde, hasta } = req.query;
+  if (!FECHA.test(String(desde ?? '')) || !FECHA.test(String(hasta ?? '')) || desde > hasta) {
+    return res.status(400).json({ error: 'desde y hasta tienen que venir como AAAA-MM-DD' });
+  }
+  if ((Date.parse(hasta) - Date.parse(desde)) / 86_400_000 > 62) {
+    return res.status(400).json({ error: 'El rango no puede pasar de 62 días' });
+  }
+  const dispositivos = req.query.dispositivo ? [req.query.dispositivo] : cfg.DISPOSITIVOS;
+  res.json({ desde, hasta, dispositivos, jornadas: store.jornadas(desde, hasta, dispositivos) });
+});
+
 // ¿Un trabajador marcó ese día? (para el módulo de etapas).
 app.get('/estuvo/:dni/:fecha', (req, res) => {
   res.json({

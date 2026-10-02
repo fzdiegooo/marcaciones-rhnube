@@ -86,6 +86,26 @@ export class Store {
     return this.db.prepare(sql).all(...params).map((r) => r.nombre);
   }
 
+  // Primera y última marcación de cada persona por día, entre dos fechas
+  // (inclusive). Las del refrigerio quedan en medio y no cuentan: la jornada va
+  // de la primera a la última. dispositivos: igual que en presentes().
+  jornadas(desde, hasta, dispositivos = []) {
+    const ids = dispositivos.map(Number).filter((n) => !Number.isNaN(n));
+    let sql = `
+      SELECT fecha, MAX(nombre) AS nombre,
+             MIN(marcacion_ts) AS primera, MAX(marcacion_ts) AS ultima,
+             COUNT(*) AS marcaciones
+      FROM marcaciones
+      WHERE fecha BETWEEN ? AND ? AND nombre IS NOT NULL AND TRIM(nombre) != ''`;
+    const params = [desde, hasta];
+    if (ids.length) {
+      sql += ` AND id_dispositivo IN (${ids.map(() => '?').join(',')})`;
+      params.push(...ids);
+    }
+    sql += ' GROUP BY fecha, dni ORDER BY fecha, nombre';
+    return this.db.prepare(sql).all(...params);
+  }
+
   estuvo(dni, fecha) {
     return this._estuvo.get(dni, fecha) !== undefined;
   }
