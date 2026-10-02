@@ -107,7 +107,7 @@ Para cortar antes de las 10:00 usar `*/20 6-9 * * *`.
 | `GET /jornadas?desde=&hasta=` | Primera y última marcación de cada persona por día (`{ fecha, nombre, primera, ultima, marcaciones }`), máximo 62 días. Para contar horas trabajadas. |
 | `GET /health`            | Estado del servicio e indicador de sync en curso.                    |
 
-Todas las rutas salvo `GET /health` exigen el header `X-API-Key` con el valor de `API_KEY`;
+Todas las rutas salvo `GET /health` y `GET /balance` exigen el header `X-API-Key` con el valor de `API_KEY`;
 sin él responden `401`. Generar la clave con `openssl rand -hex 32`.
 
 `POST /sync` tiene un lock: si ya hay una sincronización corriendo, responde `202` con
@@ -135,7 +135,7 @@ legacy/       Prototipo original en Python (superado por la versión Node)
 
 ## Seguridad
 
-- La API exige `X-API-Key` en todas las rutas salvo `/health`. Sin esa clave, cualquiera en
+- La API exige `X-API-Key` en todas las rutas salvo `/health` y `/balance`. Sin esa clave, cualquiera en
   la red podría leer asistencia, forzar logins (gasta 2captcha) o ver el saldo.
 - `config.env` y `cookies.json` contienen credenciales y una sesión viva. Están en
   `.gitignore` y no deben commitearse ni compartirse.

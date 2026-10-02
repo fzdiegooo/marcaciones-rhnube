@@ -75,7 +75,16 @@ app.disable('x-powered-by');
 // Healthcheck abierto (Docker / monitoreo), sin datos sensibles.
 app.get('/health', (_req, res) => res.json({ ok: true, syncing: running }));
 
-// Todo lo demás exige la API key en el header X-API-Key. Se comparan los hashes
+// Saldo restante en 2captcha (USD). También abierto, para vigilarlo sin la clave.
+app.get('/balance', async (_req, res) => {
+  try {
+    res.json({ balance_usd: await client.balance() });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// El resto exige la API key en el header X-API-Key. Se comparan los hashes
 // con timingSafeEqual para no filtrar la clave por tiempos de respuesta.
 const sha256 = (v) => crypto.createHash('sha256').update(v).digest();
 const API_KEY_HASH = sha256(cfg.API_KEY);
@@ -139,15 +148,6 @@ app.post('/login', async (_req, res) => {
     res.json({ status: 'ok' });
   } catch (e) {
     res.status(502).json({ status: 'error', error: e.message });
-  }
-});
-
-// Saldo restante en 2captcha (USD).
-app.get('/balance', async (_req, res) => {
-  try {
-    res.json({ balance_usd: await client.balance() });
-  } catch (e) {
-    res.status(502).json({ error: e.message });
   }
 });
 
