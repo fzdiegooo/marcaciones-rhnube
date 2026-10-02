@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import express from 'express';
 import cron from 'node-cron';
 import { loadConfig } from './config.js';
@@ -69,6 +70,20 @@ console.log(`Keepalive activo: "${cfg.KEEPALIVE_CRON}" (America/Lima)`);
 
 // ---- API ----
 const app = express();
+app.disable('x-powered-by');
+
+// Healthcheck abierto (Docker / monitoreo), sin datos sensibles.
+app.get('/health', (_req, res) => res.json({ ok: true, syncing: running }));
+
+// Todo lo demás exige la API key en el header X-API-Key. Se comparan los hashes
+// con timingSafeEqual para no filtrar la clave por tiempos de respuesta.
+const sha256 = (v) => crypto.createHash('sha256').update(v).digest();
+const API_KEY_HASH = sha256(cfg.API_KEY);
+app.use((req, res, next) => {
+  const key = req.get('x-api-key');
+  if (key && crypto.timingSafeEqual(sha256(key), API_KEY_HASH)) return next();
+  res.status(401).json({ error: 'API key inválida o ausente' });
+});
 
 // Sync manual, sin esperar el cron.
 app.post('/sync', async (_req, res) => {
@@ -135,7 +150,5 @@ app.get('/balance', async (_req, res) => {
     res.status(502).json({ error: e.message });
   }
 });
-
-app.get('/health', (_req, res) => res.json({ ok: true, syncing: running }));
 
 app.listen(cfg.PORT, () => console.log(`API en http://localhost:${cfg.PORT}`));

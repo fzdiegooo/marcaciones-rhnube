@@ -84,6 +84,7 @@ archivo `config.env`.
 | `EMAIL`          | Correo de la cuenta RHNube                                             | —                  |
 | `PASSWORD`       | Contraseña                                                             | —                  |
 | `TWOCAPTCHA_KEY` | API key de 2captcha                                                    | —                  |
+| `API_KEY`        | Clave que exige la API en el header `X-API-Key` (mínimo 32 caracteres) | —                  |
 | `DISPOSITIVOS`   | IDs de dispositivo biométrico separados por coma; vacío = todos        | `5488`             |
 | `LOOKBACK`       | Días hacia atrás que re-sincroniza cada corrida                        | `2`                |
 | `DB`             | Ruta del archivo SQLite                                                | `marcaciones.db`   |
@@ -106,15 +107,18 @@ Para cortar antes de las 10:00 usar `*/20 6-9 * * *`.
 | `GET /jornadas?desde=&hasta=` | Primera y última marcación de cada persona por día (`{ fecha, nombre, primera, ultima, marcaciones }`), máximo 62 días. Para contar horas trabajadas. |
 | `GET /health`            | Estado del servicio e indicador de sync en curso.                    |
 
+Todas las rutas salvo `GET /health` exigen el header `X-API-Key` con el valor de `API_KEY`;
+sin él responden `401`. Generar la clave con `openssl rand -hex 32`.
+
 `POST /sync` tiene un lock: si ya hay una sincronización corriendo, responde `202` con
 `{ status: "ya-en-curso" }` en lugar de lanzar otra en paralelo.
 
 Ejemplos:
 
 ```bash
-curl -X POST localhost:3000/sync
-curl localhost:3000/presentes/2026-09-28
-curl localhost:3000/estuvo/43716319/2026-09-28
+curl -X POST -H "X-API-Key: $API_KEY" localhost:3000/sync
+curl -H "X-API-Key: $API_KEY" localhost:3000/presentes/2026-09-28
+curl -H "X-API-Key: $API_KEY" localhost:3000/estuvo/43716319/2026-09-28
 ```
 
 ## Estructura
@@ -131,6 +135,8 @@ legacy/       Prototipo original en Python (superado por la versión Node)
 
 ## Seguridad
 
+- La API exige `X-API-Key` en todas las rutas salvo `/health`. Sin esa clave, cualquiera en
+  la red podría leer asistencia, forzar logins (gasta 2captcha) o ver el saldo.
 - `config.env` y `cookies.json` contienen credenciales y una sesión viva. Están en
   `.gitignore` y no deben commitearse ni compartirse.
 - `cookies.json` equivale a una sesión iniciada: cualquiera que lo tenga actúa como esa
